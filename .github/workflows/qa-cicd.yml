@@ -24,7 +24,7 @@ jobs:
           --source=/repo \
           --report-format=json \
           --report-path=/repo/gitleaks-report.json \
-          --redect \
+          --redact \
           --exitcode 0
 
       - name: Upload Gitleaks report
