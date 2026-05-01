@@ -1,4 +1,5 @@
 name: Enterprise DevSecOps CICD Pipeline
+
 on:
   push:
     branches:
@@ -7,10 +8,11 @@ on:
       - client/**
       - server/**
       - .github/workflows/qa-cicd.yml
+
 permissions:
   contents: write
   id-token: write
-  
+
 jobs:
   gitleaks-scan:
     name: Gitleaks Scan
@@ -29,7 +31,7 @@ jobs:
             --report-path=/repo/gitleaks-report.json \
             --redact \
             --exit-code 0
-            
+
       - name: Upload Gitleaks report
         uses: actions/upload-artifact@v4
         with:
@@ -44,17 +46,21 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install Checkov
         run: pip install checkov
+
       - name: Run Checkov Terraform scan
         run: |
           checkov -d . \
             --framework terraform \
             --output json > checkov-terraform-report.json || true
+
       - name: Upload Checkov Terraform report
         uses: actions/upload-artifact@v4
         with:
@@ -69,17 +75,21 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install Checkov
         run: pip install checkov
+
       - name: Run Checkov Kubernetes scan
         run: |
           checkov -d . \
             --framework kubernetes \
             --output json > checkov-k8s-report.json || true
+
       - name: Upload Checkov Kubernetes report
         uses: actions/upload-artifact@v4
         with:
@@ -94,17 +104,21 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install Checkov
         run: pip install checkov
+
       - name: Run Checkov Dockerfile scan
         run: |
           checkov -d . \
             --framework dockerfile \
             --output json > checkov-dockerfile-report.json || true
+
       - name: Upload Checkov Dockerfile report
         uses: actions/upload-artifact@v4
         with:
@@ -112,12 +126,10 @@ jobs:
           path: checkov-dockerfile-report.json
           if-no-files-found: warn
 
-
   client-trivy-fs:
     name: Client Trivy FS Scan
     runs-on: ubuntu-latest
     needs: gitleaks-scan
-
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -132,7 +144,7 @@ jobs:
         run: |
           trivy --version
           which trivy
-      
+
       - name: Run Trivy FS scan on client (JSON)
         run: |
           trivy fs ./client \
@@ -148,8 +160,8 @@ jobs:
             --format table \
             --severity HIGH,CRITICAL \
             --ignore-unfixed \
-            --exit-code 0 > client-trivy-fs-report.txt    
-  
+            --exit-code 0 > client-trivy-fs-report.txt
+
       - name: Upload Client Trivy JSON report
         uses: actions/upload-artifact@v4
         with:
@@ -168,7 +180,6 @@ jobs:
     name: Server Trivy FS Scan
     runs-on: ubuntu-latest
     needs: gitleaks-scan
-
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -214,3 +225,61 @@ jobs:
           name: server-trivy-fs-table-report
           path: server-trivy-fs-report.txt
           if-no-files-found: warn
+
+  client-lint:
+    name: Client Lint
+    runs-on: ubuntu-latest
+    needs:
+      - client-trivy-fs
+      - checkov-k8s
+      - checkov-dockerfile
+      - checkov-terraform
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install client dependencies
+        run: npm ci
+
+      - name: Run client lint
+        run: npm run lint --if-present
+        continue-on-error: true
+
+  server-lint:
+    name: Server Lint
+    runs-on: ubuntu-latest
+    needs:
+      - server-trivy-fs
+      - checkov-k8s
+      - checkov-dockerfile
+      - checkov-terraform
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install server dependencies
+        run: npm ci
+
+      - name: Run server lint
+        run: npm run lint --if-present
+        continue-on-error: true
