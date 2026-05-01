@@ -284,9 +284,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      -   sonarqube:
+    name: SonarQube Analysis & Quality Gate check
+    runs-on: ubuntu-latest
+    needs:
+      - client-test
+      - server-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: SonarQube Scan
-        run: sonar-scanner -Dproject.settings=cd/qa/sonar-project.properties
         uses: sonarsource/sonarqube-scan-action@master
+        with:
+          args: >
+            -Dproject.settings=cd/qa/sonar-project.properties
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -302,8 +315,6 @@ jobs:
 
       - name: Show Quality Gate Status
         run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
-
-
 
 
 
