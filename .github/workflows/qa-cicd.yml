@@ -277,7 +277,6 @@ jobs:
           cache-dependency-path: client/package-lock.json
       - run: npm ci
       - run: npm run build --if-present
-
   docker:
     name: Docker Build & Push
     needs:
@@ -354,3 +353,4 @@ jobs:
           tags: |
             nag2553/nodejs-app:${{ github.sha }}
             nag2553/nodejs-app:latest
+
