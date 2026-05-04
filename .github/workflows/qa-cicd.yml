@@ -369,4 +369,3 @@ jobs:
           tags: |
             nag2553/nodejs-app:${{ github.sha }}
             nag2553/nodejs-app:latest
-
