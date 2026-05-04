@@ -10,7 +10,7 @@ on:
       - .github/workflows/qa-cicd.yml
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
