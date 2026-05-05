@@ -10,8 +10,8 @@ on:
       - .github/workflows/prod-cd.yaml
 
 permissions:
-  contents: write
   id-token: write
+  contents: read
 
 jobs:
   promote-image-to-prod:
