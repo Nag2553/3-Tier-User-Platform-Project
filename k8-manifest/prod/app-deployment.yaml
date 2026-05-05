@@ -17,7 +17,7 @@ spec:
       - name: regcred
       containers:
       - name: nodejs-app
-        image: nag2553/nodejs-app:xyz
+        image: nag2553/nodejs-app:prod-2b151ed39a5629345312c20a017c8dd6b0e225c4
         ports:
         - containerPort: 5000
         env:
